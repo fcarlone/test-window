@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document </title>
+  <!-- jQuery -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+
+</head>
+
+<body>
+  <h1>Page Two</h1>
+  <h1>Zomata API Sandbox</h1>
+  <p></p>
+  <form action="api-form" name="city-form">
+    <label for="city-input">Enter City</label>
+    <input type="text" id="city-input" value="Philadelphia">
+    <label for="state-input">Enter State</label>
+    <input type="text" id="state-input" value="PA">
+    <input type="submit" id="address-form">
+  </form>
+
+  <p>Getting the unique city id</p>
+  <p id="city-index">City id: </p>
+
+
+  <h1>Google API Sandbox</h1>
+  <h3>Retrieve Geolocation</h3>
+  <form action="geocode-form" name="city-form">
+    <label for="street-input">Enter Street Address</label>
+    <input type="text" id="street-input" value="1500 Market Street">
+    <label for="street2-">Enter Address 2</label>
+    <input type="text" id="street2-input" value="">
+    <label for="city-input">Enter City</label>
+    <input type="text" id="city-input" value="Philadelphia">
+    <label for="state-input">Enter State</label>
+    <input type="text" id="state-input" value="PA">
+    <label for="zip-input">Enter Zip</label>
+    <input type="text" id="zip-input" value="19103">
+    <input type="submit" id="geocode-form">
+  </form>
+
+  <p>Geocode latitude and longitude</p>
+  <p id="lat-data">Latitude: </p>
+  <p id="lng-data">Longitude: </p>
+
+  <h1>Zomata Restaurants List</h1>
+  <h3>Get Latitude and Longitude before clicking button</h3>
+  <button id="get-restaurants">Get Restaurants</button>
+  <p>Resturant List</p>
+  <ul class="restaurant-list"></ul>
+
+
+  <script type="text/javascript"
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAh5sBAW8JKo0Fbeu4JPk_dYvN5aEzPW4c&libraries=places"></script>
+  <!-- JavaScript -->
+
+  <script>
+    // Global variables
+    let inputCity;
+    let inputState;
+    let geocodeLat;
+    let geocodeLng;
+
+    let googleMapsApi = 'AIzaSyAh5sBAW8JKo0Fbeu4JPk_dYvN5aEzPW4c'
+    // https://maps.googleapis.com/maps/api/geocode/json?address=1600+Amphitheatre+Parkway,+Mountain+View,+CA&key=YOUR_API_KEY
+
+    // Address form
+    $("#address-form").on("click", function (event) {
+      event.preventDefault();
+
+      inputCity = $("#city-input").val().trim();
+      inputState = $("#state-input").val().trim();
+      let cityState = `${inputCity}, ${inputState}`
+      console.log(cityState)
+
+      let key = '17ea0e246ec48507f6eab5348d1e5536';
+      let getURL = `https://developers.zomato.com/api/v2.1/cities?q=${inputCity}`;
+      $.ajax({
+        url: getURL,
+        method: "GET",
+        headers: {
+          "user-key": "17ea0e246ec48507f6eab5348d1e5536"
+        }
+      }).then(function (repsonse) {
+        console.log(repsonse.location_suggestions)
+        let getIndex = repsonse.location_suggestions
+        getIndex.forEach((city) => {
+          if (city.name === cityState) {
+            console.log(city.id)
+            $("#city-index").append(city.id)
+          }
+        })
+      });
+    })
+
+    // Google API 
+    $("#geocode-form").on("click", function (event) {
+      event.preventDefault()
+
+      let streetInput = $("#street-input").val().trim()
+      let street2Input = $("#street2-input").val().trim()
+      let cityInput = $("#city-input").val().trim();
+      let stateInput = $("#state-input").val().trim();
+      let zipInput = $("#zip-input").val().trim();
+      console.log(streetInput, street2Input, cityInput, stateInput, zipInput)
+
+      $.ajax({
+        url: `https://maps.googleapis.com/maps/api/geocode/json?address=${streetInput},+${cityInput},+${stateInput}&key=AIzaSyAh5sBAW8JKo0Fbeu4JPk_dYvN5aEzPW4c`,
+        method: "GET"
+      }).then(function (response) {
+        geocodeLat = response.results[0].geometry.location.lat;
+        geocodeLng = response.results[0].geometry.location.lng;
+        $("#lat-data").text(`Latitude: ${geocodeLat}`);
+        $("#lng-data").text(`Longitude: ${geocodeLng}`)
+      })
+    })
+
+    // Zomata Resturant List
+    $(document).on("click", "#get-restaurants", function (event) {
+      event.preventDefault()
+
+      $.ajax({
+        url: `https://developers.zomato.com/api/v2.1/search?count=100&lat=${geocodeLat}&lon=${geocodeLng}&sort=real_distance`,
+        method: "GET",
+        headers: {
+          "user-key": "17ea0e246ec48507f6eab5348d1e5536"
+        }
+      }).then(function (response) {
+        console.log(geocodeLat, geocodeLng)
+        console.log(response)
+        let restaurants = response.restaurants
+        $(".restaurant-list ").text(` `)
+        restaurants.forEach((rest) => {
+          console.log(rest.restaurant.name)
+          $(".restaurant-list ").append(`<li>${rest.restaurant.name} --  ${rest.restaurant.location.address}</li>`)
+        })
+
+      })
+    })
+
+    // Edamam API
+    // Example: s"https://api.edamam.com/search?q=chicken&app_id=${YOUR_APP_ID}&app_key=${YOUR_APP_KEY}&from=0&to=3&calories=591-722&health=alcohol-free"
+
+    let applicationId = 'c3a1d508';
+    let apiKey = '135f188cd8cc5284999c90865f37a1a4';
+
+    $.ajax({
+      url: `https://api.edamam.com/search?q=chicken&app_id=${applicationId}&app_key=${apiKey}`,
+      method: "GET"
+    }).then(function (response) {
+      console.log(response)
+    })
+  </script>
+</body>
+
+</html>
